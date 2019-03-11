@@ -1,0 +1,694 @@
+﻿<html>
+	<script type='text/javascript'>
+		var readPlusFlag = false;
+		function memoRead() {
+			readPlusFlag = false;
+			document.getElementById("fileMain").value = "";
+			document.getElementById("fileMain").click();
+		}
+		function memoReadPlus() {
+			readPlusFlag = true;
+			document.getElementById("fileMain").value = "";
+			document.getElementById("fileMain").click();
+		}
+		function memoReadMain(shiftJisFlg) {
+			var file = document.getElementById("fileMain").files;
+			var reader = new FileReader();
+
+			if (shiftJisFlg) {
+				reader.readAsText(file[0],'shift-jis');
+			} else {
+				reader.readAsText(file[0]);
+			}
+
+			reader.onload = function(ev){
+				var charDestructionFlg = false;
+				for (var i = 0; i < reader.result.length; i++) {
+					if (reader.result.charCodeAt(i) == 65533) {
+						// とても真似してほしくないゴリ押し
+						// 菱形にハテナマークがあるやつが存在したら文字化けしてると判断し、shift-JISで実行
+						charDestructionFlg = true;
+						break;
+					}
+				}
+				if (charDestructionFlg) {
+					memoReadMain(true);
+				} else {
+					if (readPlusFlag) {
+						document.getElementById("memoText").value += "\r\n" + reader.result;
+					} else {
+						document.getElementById("memoText").value = reader.result;
+					}
+				}
+			}
+		}
+		function memoDownload() {
+			var textdata = document.getElementById("memoText").value;
+			if (window.navigator.userAgent.indexOf("Windows")) {
+				// 改行コードあわせ
+				textdata = textdata.replace(/\n/g, "\r\n").replace(/\r\r/g, "\r")
+			}
+			var blob = new Blob([textdata], { "type" : "text/plain" });
+			if (window.navigator.msSaveBlob) {
+				window.navigator.msSaveBlob(blob, "memo.txt");
+			}
+		}
+		function calcSetting(pattern) {
+			switch(pattern) {
+				case 1:
+					document.getElementById("memoText").value += document.getElementById("calc_text").value;
+					break;
+				case 2:
+					document.getElementById("memoText").value += document.getElementById("calc_old").innerText;
+					document.getElementById("memoText").value += document.getElementById("calc_operator").innerText;
+					document.getElementById("memoText").value += document.getElementById("calc_text").value;
+					break;
+				case 3:
+					document.getElementById("memoText").value += document.getElementById("calc_old").innerText;
+					document.getElementById("memoText").value += document.getElementById("calc_operator").innerText;
+					document.getElementById("memoText").value += document.getElementById("calc_text").value;
+					
+					if (document.getElementById("calc_text").value != "" && document.getElementById("calc_operator").innerText != "") {
+						var calcData = document.getElementById("calc_text").value;
+						if(calcData == "0.") {
+							calcData = 0;
+						}
+						calcData = parseFloat(calcData);
+						if (document.getElementById("calc_old").innerText != "" && document.getElementById("calc_operator").innerText != "") {
+							switch(document.getElementById("calc_operator").innerText) {
+								case "÷":
+									calcData = document.getElementById("calc_old").innerText / calcData;
+									break;
+								case "×":
+									calcData = document.getElementById("calc_old").innerText * calcData;
+									break;
+								case "＋":
+									calcData = parseFloat(document.getElementById("calc_old").innerText) + calcData;
+									break;
+								case "－":
+									calcData = document.getElementById("calc_old").innerText - calcData;
+									break;
+							}
+						}
+						document.getElementById("memoText").value += "=";
+						document.getElementById("memoText").value += calcData;
+					}
+					break;
+			}
+		}
+		function calcTextAdd(ev) {
+			if (document.getElementById("calc_text").value == "0" || document.getElementById("calc_text").value == "") {
+				document.getElementById("calc_text").value = ev.innerText;
+			} else {
+				document.getElementById("calc_text").value += ev.innerText;
+			}
+		}
+		function calcTextAddComma(ev) {
+			if (document.getElementById("calc_text").value != "" && document.getElementById("calc_text").value.indexOf(".") == -1) {
+				document.getElementById("calc_text").value += ev.innerText;
+			}
+		}
+		function calcTextSign(ev) {
+			if (document.getElementById("calc_text").value != "" && document.getElementById("calc_text").value != "0.") {
+				document.getElementById("calc_text").value = document.getElementById("calc_text").value * -1;
+			}
+		}
+		function calcTextCE(ev) {
+			document.getElementById("calc_text").value = 0;
+		}
+		function calcTextC(ev) {
+			document.getElementById("calc_text").value = "";
+			document.getElementById("calc_old").innerText = "";
+			document.getElementById("calc_operator").innerText = "";
+		}
+		function calcTextBS(ev) {
+			if (document.getElementById("calc_text").value.length > 0) {
+				document.getElementById("calc_text").value = document.getElementById("calc_text").value.substr(0,document.getElementById("calc_text").value.length-1);
+			}
+			if (document.getElementById("calc_text").value == "-") {
+				document.getElementById("calc_text").value = "";
+			}
+		}
+		function calcTextOpe(ev) {
+			if(document.getElementById("calc_text").value == "0.") {
+				document.getElementById("calc_text").value = 0;
+			}
+			if (document.getElementById("calc_text").value != "" && document.getElementById("calc_old").innerText != "" && document.getElementById("calc_operator").innerText != "") {
+				switch(document.getElementById("calc_operator").innerText) {
+					case "÷":
+						document.getElementById("calc_text").value = document.getElementById("calc_old").innerText / document.getElementById("calc_text").value;
+						break;
+					case "×":
+						document.getElementById("calc_text").value = document.getElementById("calc_old").innerText * document.getElementById("calc_text").value;
+						break;
+					case "＋":
+						document.getElementById("calc_text").value = parseFloat(document.getElementById("calc_old").innerText) + parseFloat(document.getElementById("calc_text").value);
+						break;
+					case "－":
+						document.getElementById("calc_text").value = document.getElementById("calc_old").innerText - document.getElementById("calc_text").value;
+						break;
+				}
+			}
+			
+			if (document.getElementById("calc_text").value != "" && ev.innerText != "=") {
+				document.getElementById("calc_old").innerText = document.getElementById("calc_text").value;
+				document.getElementById("calc_operator").innerText = ev.innerText;
+				document.getElementById("calc_text").value = 0;
+			} else if (ev.innerText == "=") {
+				document.getElementById("calc_old").innerText = "";
+				document.getElementById("calc_operator").innerText = "";
+			}
+		}
+		function Challenge() {
+			document.getElementById("back_area").className="main_back2";
+			alert("背景の般若心経のうち、間違っている漢字が２つあります。" + "\r\n" + "どれでしょう？(ヒント：文字コード)");
+			//正解は文字コードSJISなので変更した「垂」と「罫」
+			document.getElementById("back_area").className="main_back";
+		}
+		function gameStart() {
+			if (document.getElementById("bombCount").value == "" || document.getElementById("bombCount").value < 0) {
+				alert("地雷の数が不正です。");
+				return;
+			}
+			if (document.getElementById("bombCount").value >= 440) {
+				alert("地雷が多すぎます。");
+				return;
+			}
+			document.getElementById("bombCount").disabled=true;
+			document.getElementById("gameStatus").style.display="none";
+			// 地雷作成
+			var killData = new Array();
+			var killCount = 0;
+			while(true) {
+				var killIndex = parseInt(Math.random() * 440) + 1;
+				//念のため441未満なら設定
+				if (killData[killIndex] === undefined && killIndex < 441) {
+					killData[killIndex] = "×";
+					killCount += 1;
+				}
+				if (killCount >= document.getElementById("bombCount").value) {
+					break;
+				}
+			}
+			for(var i=1; i <= 440; i++) {
+				document.getElementById("g"+ i).innerText = "　";
+				if (killData[i] === undefined) {
+					document.getElementById("g"+ i).value="　";
+					// 周辺の地雷を確認
+					var killSideCount = 0
+					//左
+					if (i % 20 != 1 && killData[i-1] == "×") {
+						killSideCount += 1;
+					}
+					//右
+					if (i % 20 != 0 && killData[i+1] == "×") {
+						killSideCount += 1;
+					}
+					//上
+					if (i > 20 && killData[i-20] == "×") {
+						killSideCount += 1;
+					}
+					//右上
+					if (i % 20 != 0 && i > 20 && killData[i-19] == "×") {
+						killSideCount += 1;
+					}
+					//左上
+					if (i % 20 != 1 && i > 20 && killData[i-21] == "×") {
+						killSideCount += 1;
+					}
+					//下
+					if (i <= 420 && killData[i+20] == "×") {
+						killSideCount += 1;
+					}
+					//左下
+					if (i % 20 != 1 && i <= 420 && killData[i+19] == "×") {
+						killSideCount += 1;
+					}
+					//右下
+					if (i % 20 != 0 && i <= 420 && killData[i+21] == "×") {
+						killSideCount += 1;
+					}
+					if (killSideCount > 0) {
+						document.getElementById("g"+ i).value = killSideCount;
+					}
+				} else {
+					document.getElementById("g"+ i).value="×";
+				}
+				document.getElementById("g"+ i).style.background="#BBBBBB";
+				document.getElementById("g"+ i).disabled=false;
+				document.getElementById("g"+ i).style.color="black";
+				document.getElementById("g"+ i).onclick = function () {
+					this.innerText = this.value;
+					this.disabled=true;
+					if (this.value=="×") {
+						this.style.background="red";
+						for (var i = 1; i <= 440; i++) {
+							if (!document.getElementById("g"+ i).disabled && document.getElementById("g"+ i).value == "×") {
+								document.getElementById("g"+ i).disabled = true;
+								document.getElementById("g"+ i).innerText=document.getElementById("g"+ i).value;
+								document.getElementById("g"+ i).style.background="red";
+							}
+						}
+						alert("ゲームオーバー");
+						document.getElementById("msgLabel").innerText="敗　北";
+						document.getElementById("msgLabel").style.marginTop="10%";
+						document.getElementById("gameMsg").style.fontSize="10rem";
+						document.getElementById("gameMsg").style.background="green";
+						document.getElementById("gameMsg").style.color="red";
+						document.getElementById("gameStatus").style.display="none";
+						document.getElementById("gameMsg").style.display="block";
+						document.getElementById("bombCount").disabled=false;
+						return;
+					} else if (this.value != "　") {
+						this.style.color="blue";
+						this.style.background="#EEEEEE";
+					} else {
+						this.style.background="#EEEEEE";
+						function whiteOut(thisIndex) {
+							// 左に開ける
+							var leftCount = 1;
+							while (true) {
+								var leftIndex = parseInt(thisIndex) - leftCount;
+								if (parseInt(leftIndex % 20) == 0 || document.getElementById("g"+ leftIndex).disabled) {
+									break;
+								}
+								document.getElementById("g"+ leftIndex).innerText = document.getElementById("g"+ leftIndex).value;
+								document.getElementById("g"+ leftIndex).disabled=true;
+								document.getElementById("g"+ leftIndex).style.background="#EEEEEE";
+								if(document.getElementById("g"+ leftIndex).value == "　") {
+									whiteOut(leftIndex);
+								} else {
+									document.getElementById("g"+ leftIndex).style.color="blue";
+									break;
+								}
+								leftCount++;
+							}
+							// 右に開ける
+							var rightCount = 1;
+							while (true) {
+								var rightIndex = parseInt(thisIndex) + rightCount;
+								if (parseInt(rightIndex % 20) == 1 || document.getElementById("g"+ rightIndex).disabled) {
+									break;
+								}
+								document.getElementById("g"+ rightIndex).innerText = document.getElementById("g"+ rightIndex).value;
+								document.getElementById("g"+ rightIndex).disabled=true;
+								document.getElementById("g"+ rightIndex).style.background="#EEEEEE";
+								if(document.getElementById("g"+ rightIndex).value == "　") {
+									whiteOut(rightIndex);
+								} else {
+									document.getElementById("g"+ rightIndex).style.color="blue";
+									break;
+								}
+								rightCount++;
+							}
+							// 上に開ける
+							var upCount = 1;
+							while (true) {
+								var upIndex = parseInt(thisIndex) - upCount * 20;
+								if (upIndex < 1 || document.getElementById("g"+ upIndex).disabled) {
+									break;
+								}
+								document.getElementById("g"+ upIndex).innerText = document.getElementById("g"+ upIndex).value;
+								document.getElementById("g"+ upIndex).disabled=true;
+								document.getElementById("g"+ upIndex).style.background="#EEEEEE";
+								if(document.getElementById("g"+ upIndex).value == "　") {
+									whiteOut(upIndex);
+								} else {
+									document.getElementById("g"+ upIndex).style.color="blue";
+									break;
+								}
+								upCount++;
+							}
+							// 下に開ける
+							var downCount = 1;
+							while (true) {
+								var downIndex = parseInt(thisIndex) + downCount * 20;
+								if (downIndex > 440 || document.getElementById("g"+ downIndex).disabled) {
+									break;
+								}
+								document.getElementById("g"+ downIndex).innerText = document.getElementById("g"+ downIndex).value;
+								document.getElementById("g"+ downIndex).disabled=true;
+								document.getElementById("g"+ downIndex).style.background="#EEEEEE";
+								if(document.getElementById("g"+ downIndex).value == "　") {
+									whiteOut(downIndex);
+								} else {
+									document.getElementById("g"+ downIndex).style.color="blue";
+									break;
+								}
+								downCount++;
+							}
+						}
+						whiteOut(this.id.replace("g",""));
+					}
+					
+					// 残項目確認
+					var noneClickCount = 0;
+					for (var i = 1; i <= 440; i++) {
+						if (!document.getElementById("g"+ i).disabled) {
+							noneClickCount++;
+						}
+						if (noneClickCount > document.getElementById("bombCount").value) {
+							break;
+						}
+					}
+					if (noneClickCount <= document.getElementById("bombCount").value) {
+						alert("ゲームクリア");
+						document.getElementById("msgLabel").innerText="おめでとう";
+						document.getElementById("msgLabel").style.marginTop="5%";
+						document.getElementById("gameMsg").style.fontSize="6rem";
+						document.getElementById("gameStatus").style.display="none";
+						document.getElementById("gameMsg").style.display="block";
+						document.getElementById("gameMsg").style.color="fuchsia";
+						document.getElementById("gameMsg").style.background="#99FFFF";
+						document.getElementById("bombCount").disabled=false;
+					}
+				};
+			}
+			document.getElementById("gameMsg").style.display="none";
+			document.getElementById("gameStatus").style.display="block";
+		}
+		function gameEnd() {
+			document.getElementById("gameStatus").style.display="none";
+			document.getElementById("gameMsg").style.display="none";
+			document.getElementById("msgLabel").innerText="";
+			document.getElementById("bombCount").disabled=false;
+		}
+	</script>
+	<style type="text/css">
+	<!--
+		.body_class {
+			background-color:#FFFF99;
+		}
+		.main_back {
+			height:98%;
+			font-size:1.5rem;
+			position:absolute;
+			z-index:0;
+			color:#FFFFC2;
+			overflow:hidden;
+		}
+		.main_back2 {
+			font-size:1.5rem;
+			position:absolute;
+			z-index:2;
+			color:red;
+			overflow:hidden;
+		}
+		.main {
+			margin-left:1%;
+			margin-right:1%;
+			width:98%;
+			height:98%;
+			position:absolute;
+			z-index:1;
+		}
+		.pleaseMsg {
+			font-size:1rem;
+			font-weight:bold;
+			color:blue;
+			margin-bottom:5px;
+		}
+		.memoAreaClass {
+			width:420px;
+			height:240px;
+			font-size:1.5rem;
+			font-weight:bold;
+			margin-right:40px;
+			margin-bottom:5px;
+		}
+		.button1 {
+			width:50px;
+		}
+		.button2 {
+			width:100px;
+		}
+		.readLabelClass,
+		.calcArea label {
+			margin-left:20px;
+		}
+		.calcArea {
+			padding:10px;
+		}
+		.calcArea input {
+			width:220px;
+			text-align:right;
+			font-size:1.2rem;
+			margin-bottom:10px;
+		}
+		.calcArea div {
+			height:20px;
+		}
+		.calcArea button {
+			font-size:1.4rem;
+			width:50px;
+			height:30px;
+			margin-left:1px;
+			margin-right:4px;
+			margin-bottom:2px;
+		}
+		.calcArea button.memoSetting {
+			font-size:1.4rem;
+			width:150px;
+			height:30px;
+		}
+		.gameHead {
+			width:500px;
+			height:30px;
+		}
+		.gameArea {
+			width:500px;
+			height:550px;
+			background-color:white;
+			border: solid 1px;
+		}
+		.gameArea button{
+			width:25px;
+			height:25px;
+			padding:0px;
+		}
+		.gameMsgArea {
+			width:100%;
+			height:100%;
+			text-align:center;
+			color:red;
+			vertical-align: middle;
+		}
+		.gameMsgArea label{
+			-ms-writing-mode: tb-rl;
+			writing-mode: vertical-rl;
+		}
+	-->
+	</style>
+	<body class="body_class">
+		<div class="main_back" id="back_area">
+			<label>
+			仏説・摩訶般若波羅蜜多心経　観自在菩薩・行深般若波羅蜜多時、照見五蘊皆空、
+			度一切苦厄。舎利子。色不異空、空不異色、色即是空、空即是色。受・想・行・識・亦復如是。
+			舎利子。是諸法空相、不生不滅、不垢不浄、不増不減。是故空中、無色、無受・想・行・識、
+			無眼・耳・鼻・舌・身・意、無色・声・香・味・触・法。無眼界、乃至、無意識界。
+			無無明・亦無無明尽、乃至、無老死、亦無老死尽。無苦・集・滅・道。
+			無智、亦無得。以無所得故、菩提薩垂、依般若波羅蜜多故、心無罫礙、無罫礙故、
+			無有恐怖、遠離・一切・顛倒夢想、究竟涅槃。三世諸仏、依般若波羅蜜多故、得阿耨多羅三藐三菩提。
+			故知、般若波羅蜜多、是大神呪、是大明呪、是無上呪、是無等等呪、能除一切苦、真実不虚。故説、般若波羅蜜多呪。
+			即説呪曰、羯諦羯諦、波羅羯諦、波羅僧羯諦、菩提薩婆訶。般若心経
+			</label>
+			<label>
+			仏説・摩訶般若波羅蜜多心経　観自在菩薩・行深般若波羅蜜多時、照見五蘊皆空、
+			度一切苦厄。舎利子。色不異空、空不異色、色即是空、空即是色。受・想・行・識・亦復如是。
+			舎利子。是諸法空相、不生不滅、不垢不浄、不増不減。是故空中、無色、無受・想・行・識、
+			無眼・耳・鼻・舌・身・意、無色・声・香・味・触・法。無眼界、乃至、無意識界。
+			無無明・亦無無明尽、乃至、無老死、亦無老死尽。無苦・集・滅・道。
+			無智、亦無得。以無所得故、菩提薩垂、依般若波羅蜜多故、心無罫礙、無罫礙故、
+			無有恐怖、遠離・一切・顛倒夢想、究竟涅槃。三世諸仏、依般若波羅蜜多故、得阿耨多羅三藐三菩提。
+			故知、般若波羅蜜多、是大神呪、是大明呪、是無上呪、是無等等呪、能除一切苦、真実不虚。故説、般若波羅蜜多呪。
+			即説呪曰、羯諦羯諦、波羅羯諦、波羅僧羯諦、菩提薩婆訶。般若心経
+			</label>
+			<label>
+			仏説・摩訶般若波羅蜜多心経　観自在菩薩・行深般若波羅蜜多時、照見五蘊皆空、
+			度一切苦厄。舎利子。色不異空、空不異色、色即是空、空即是色。受・想・行・識・亦復如是。
+			舎利子。是諸法空相、不生不滅、不垢不浄、不増不減。是故空中、無色、無受・想・行・識、
+			無眼・耳・鼻・舌・身・意、無色・声・香・味・触・法。無眼界、乃至、無意識界。
+			無無明・亦無無明尽、乃至、無老死、亦無老死尽。無苦・集・滅・道。
+			無智、亦無得。以無所得故、菩提薩垂、依般若波羅蜜多故、心無罫礙、無罫礙故、
+			無有恐怖、遠離・一切・顛倒夢想、究竟涅槃。三世諸仏、依般若波羅蜜多故、得阿耨多羅三藐三菩提。
+			故知、般若波羅蜜多、是大神呪、是大明呪、是無上呪、是無等等呪、能除一切苦、真実不虚。故説、般若波羅蜜多呪。
+			即説呪曰、羯諦羯諦、波羅羯諦、波羅僧羯諦、菩提薩婆訶。般若心経
+			</label>
+			<label>
+			仏説・摩訶般若波羅蜜多心経　観自在菩薩・行深般若波羅蜜多時、照見五蘊皆空、
+			度一切苦厄。舎利子。色不異空、空不異色、色即是空、空即是色。受・想・行・識・亦復如是。
+			舎利子。是諸法空相、不生不滅、不垢不浄、不増不減。是故空中、無色、無受・想・行・識、
+			無眼・耳・鼻・舌・身・意、無色・声・香・味・触・法。無眼界、乃至、無意識界。
+			無無明・亦無無明尽、乃至、無老死、亦無老死尽。無苦・集・滅・道。
+			無智、亦無得。以無所得故、菩提薩垂、依般若波羅蜜多故、心無罫礙、無罫礙故、
+			無有恐怖、遠離・一切・顛倒夢想、究竟涅槃。三世諸仏、依般若波羅蜜多故、得阿耨多羅三藐三菩提。
+			故知、般若波羅蜜多、是大神呪、是大明呪、是無上呪、是無等等呪、能除一切苦、真実不虚。故説、般若波羅蜜多呪。
+			即説呪曰、羯諦羯諦、波羅羯諦、波羅僧羯諦、菩提薩婆訶。般若心経
+			</label>
+			<label>
+			仏説・摩訶般若波羅蜜多心経　観自在菩薩・行深般若波羅蜜多時、照見五蘊皆空、
+			度一切苦厄。舎利子。色不異空、空不異色、色即是空、空即是色。受・想・行・識・亦復如是。
+			舎利子。是諸法空相、不生不滅、不垢不浄、不増不減。是故空中、無色、無受・想・行・識、
+			無眼・耳・鼻・舌・身・意、無色・声・香・味・触・法。無眼界、乃至、無意識界。
+			無無明・亦無無明尽、乃至、無老死、亦無老死尽。無苦・集・滅・道。
+			無智、亦無得。以無所得故、菩提薩垂、依般若波羅蜜多故、心無罫礙、無罫礙故、
+			無有恐怖、遠離・一切・顛倒夢想、究竟涅槃。三世諸仏、依般若波羅蜜多故、得阿耨多羅三藐三菩提。
+			故知、般若波羅蜜多、是大神呪、是大明呪、是無上呪、是無等等呪、能除一切苦、真実不虚。故説、般若波羅蜜多呪。
+			即説呪曰、羯諦羯諦、波羅羯諦、波羅僧羯諦、菩提薩婆訶。般若心経
+			</label>
+		</div>
+		<div class="main">
+			<label class="pleaseMsg">動作環境：Internet Explorer11　スクリプトやActiveXコントロールの実行を許可してください。</label><br>
+			<table>
+				<td>
+					<p style="height:1px;"></p>
+					<label>メモ</label><br>
+					<textarea class="memoAreaClass" id="memoText" value=""></textarea>
+					<br>
+					<br>
+					<button class="button1" onclick="memoRead();">読込</button>
+					<button class="button2" onclick="memoReadPlus();">後乗せ読込</button>
+					<br>
+					<br>
+					<button class="button1" onclick="memoDownload();">保存</button>
+					<button class="button2" id="calc_button" onclick="Challenge();">チャレンジ</button>
+					<br>
+					<br>
+					<div class="calcArea">
+						電卓<br>
+						<div>
+							<label id="calc_old"></label><label id="calc_operator"></label>
+						</div>
+						<input id="calc_text" type="text" readonly="true" />
+						<br>
+						<button onclick="calcTextCE(this);" >CE</button><button onclick="calcTextC(this);" >C</button><button onclick="calcTextBS(this);" >BS</button><button onclick="calcTextOpe(this);" >÷</button>
+						<button class="memoSetting" id="calc_button" onclick="calcSetting(1);">値反映</button>
+						<br>
+						<button onclick="calcTextAdd(this);" >7</button><button onclick="calcTextAdd(this);" >8</button><button onclick="calcTextAdd(this);" >9</button><button onclick="calcTextOpe(this);" >×</button>
+						<button class="memoSetting" id="calc_button" onclick="calcSetting(2);">式反映</button>
+						<br>
+						<button onclick="calcTextAdd(this);" >4</button><button onclick="calcTextAdd(this);" >5</button><button onclick="calcTextAdd(this);" >6</button><button onclick="calcTextOpe(this);" >－</button>
+						<button class="memoSetting" id="calc_button" onclick="calcSetting(3);">結果反映</button>
+						<br>
+						<button onclick="calcTextAdd(this);" >1</button><button onclick="calcTextAdd(this);" >2</button><button onclick="calcTextAdd(this);" >3</button><button onclick="calcTextOpe(this);" >＋</button>
+						<br>
+						<button onclick="calcTextSign(this);" >±</button><button onclick="calcTextAdd(this);" >0</button><button onclick="calcTextAddComma(this);" >.</button><button onclick="calcTextOpe(this);" >=</button>
+					</div>
+					<div style="display:none;">
+						<input type="file" name="s_file" id="fileMain" name="fileInput" accept="text/plain" onchange="memoReadMain(false);">
+					</div>
+				</td>
+				<td>
+					<div class="gameHead">
+						<table>
+							<td style="width:150px;">
+								<label>マインスイーパ</label>
+							</td>
+							<td style="width:350px;text-align:right;">
+								<label>地雷の数：</label>
+								<input type="number" id="bombCount" style="text-align:right" value="50" />
+								<button onclick="gameEnd();">クリア</button>
+								<button onclick="gameStart();">開始</button>
+							</td>
+						</table>
+					</div>
+					<div class="gameArea">
+						<div id="gameStatus" style="display:none;">
+							<button id="g1"/><button id="g2"/><button id="g3"/><button id="g4"/><button id="g5"/>
+							<button id="g6"/><button id="g7"/><button id="g8"/><button id="g9"/><button id="g10"/>
+							<button id="g11"/><button id="g12"/><button id="g13"/><button id="g14"/><button id="g15"/>
+							<button id="g16"/><button id="g17"/><button id="g18"/><button id="g19"/><button id="g20"/>
+							<button id="g21"/><button id="g22"/><button id="g23"/><button id="g24"/><button id="g25"/>
+							<button id="g26"/><button id="g27"/><button id="g28"/><button id="g29"/><button id="g30"/>
+							<button id="g31"/><button id="g32"/><button id="g33"/><button id="g34"/><button id="g35"/>
+							<button id="g36"/><button id="g37"/><button id="g38"/><button id="g39"/><button id="g40"/>
+							<button id="g41"/><button id="g42"/><button id="g43"/><button id="g44"/><button id="g45"/>
+							<button id="g46"/><button id="g47"/><button id="g48"/><button id="g49"/><button id="g50"/>
+							<button id="g51"/><button id="g52"/><button id="g53"/><button id="g54"/><button id="g55"/>
+							<button id="g56"/><button id="g57"/><button id="g58"/><button id="g59"/><button id="g60"/>
+							<button id="g61"/><button id="g62"/><button id="g63"/><button id="g64"/><button id="g65"/>
+							<button id="g66"/><button id="g67"/><button id="g68"/><button id="g69"/><button id="g70"/>
+							<button id="g71"/><button id="g72"/><button id="g73"/><button id="g74"/><button id="g75"/>
+							<button id="g76"/><button id="g77"/><button id="g78"/><button id="g79"/><button id="g80"/>
+							<button id="g81"/><button id="g82"/><button id="g83"/><button id="g84"/><button id="g85"/>
+							<button id="g86"/><button id="g87"/><button id="g88"/><button id="g89"/><button id="g90"/>
+							<button id="g91"/><button id="g92"/><button id="g93"/><button id="g94"/><button id="g95"/>
+							<button id="g96"/><button id="g97"/><button id="g98"/><button id="g99"/><button id="g100"/>
+							<button id="g101"/><button id="g102"/><button id="g103"/><button id="g104"/><button id="g105"/>
+							<button id="g106"/><button id="g107"/><button id="g108"/><button id="g109"/><button id="g110"/>
+							<button id="g111"/><button id="g112"/><button id="g113"/><button id="g114"/><button id="g115"/>
+							<button id="g116"/><button id="g117"/><button id="g118"/><button id="g119"/><button id="g120"/>
+							<button id="g121"/><button id="g122"/><button id="g123"/><button id="g124"/><button id="g125"/>
+							<button id="g126"/><button id="g127"/><button id="g128"/><button id="g129"/><button id="g130"/>
+							<button id="g131"/><button id="g132"/><button id="g133"/><button id="g134"/><button id="g135"/>
+							<button id="g136"/><button id="g137"/><button id="g138"/><button id="g139"/><button id="g140"/>
+							<button id="g141"/><button id="g142"/><button id="g143"/><button id="g144"/><button id="g145"/>
+							<button id="g146"/><button id="g147"/><button id="g148"/><button id="g149"/><button id="g150"/>
+							<button id="g151"/><button id="g152"/><button id="g153"/><button id="g154"/><button id="g155"/>
+							<button id="g156"/><button id="g157"/><button id="g158"/><button id="g159"/><button id="g160"/>
+							<button id="g161"/><button id="g162"/><button id="g163"/><button id="g164"/><button id="g165"/>
+							<button id="g166"/><button id="g167"/><button id="g168"/><button id="g169"/><button id="g170"/>
+							<button id="g171"/><button id="g172"/><button id="g173"/><button id="g174"/><button id="g175"/>
+							<button id="g176"/><button id="g177"/><button id="g178"/><button id="g179"/><button id="g180"/>
+							<button id="g181"/><button id="g182"/><button id="g183"/><button id="g184"/><button id="g185"/>
+							<button id="g186"/><button id="g187"/><button id="g188"/><button id="g189"/><button id="g190"/>
+							<button id="g191"/><button id="g192"/><button id="g193"/><button id="g194"/><button id="g195"/>
+							<button id="g196"/><button id="g197"/><button id="g198"/><button id="g199"/><button id="g200"/>
+							<button id="g201"/><button id="g202"/><button id="g203"/><button id="g204"/><button id="g205"/>
+							<button id="g206"/><button id="g207"/><button id="g208"/><button id="g209"/><button id="g210"/>
+							<button id="g211"/><button id="g212"/><button id="g213"/><button id="g214"/><button id="g215"/>
+							<button id="g216"/><button id="g217"/><button id="g218"/><button id="g219"/><button id="g220"/>
+							<button id="g221"/><button id="g222"/><button id="g223"/><button id="g224"/><button id="g225"/>
+							<button id="g226"/><button id="g227"/><button id="g228"/><button id="g229"/><button id="g230"/>
+							<button id="g231"/><button id="g232"/><button id="g233"/><button id="g234"/><button id="g235"/>
+							<button id="g236"/><button id="g237"/><button id="g238"/><button id="g239"/><button id="g240"/>
+							<button id="g241"/><button id="g242"/><button id="g243"/><button id="g244"/><button id="g245"/>
+							<button id="g246"/><button id="g247"/><button id="g248"/><button id="g249"/><button id="g250"/>
+							<button id="g251"/><button id="g252"/><button id="g253"/><button id="g254"/><button id="g255"/>
+							<button id="g256"/><button id="g257"/><button id="g258"/><button id="g259"/><button id="g260"/>
+							<button id="g261"/><button id="g262"/><button id="g263"/><button id="g264"/><button id="g265"/>
+							<button id="g266"/><button id="g267"/><button id="g268"/><button id="g269"/><button id="g270"/>
+							<button id="g271"/><button id="g272"/><button id="g273"/><button id="g274"/><button id="g275"/>
+							<button id="g276"/><button id="g277"/><button id="g278"/><button id="g279"/><button id="g280"/>
+							<button id="g281"/><button id="g282"/><button id="g283"/><button id="g284"/><button id="g285"/>
+							<button id="g286"/><button id="g287"/><button id="g288"/><button id="g289"/><button id="g290"/>
+							<button id="g291"/><button id="g292"/><button id="g293"/><button id="g294"/><button id="g295"/>
+							<button id="g296"/><button id="g297"/><button id="g298"/><button id="g299"/><button id="g300"/>
+							<button id="g301"/><button id="g302"/><button id="g303"/><button id="g304"/><button id="g305"/>
+							<button id="g306"/><button id="g307"/><button id="g308"/><button id="g309"/><button id="g310"/>
+							<button id="g311"/><button id="g312"/><button id="g313"/><button id="g314"/><button id="g315"/>
+							<button id="g316"/><button id="g317"/><button id="g318"/><button id="g319"/><button id="g320"/>
+							<button id="g321"/><button id="g322"/><button id="g323"/><button id="g324"/><button id="g325"/>
+							<button id="g326"/><button id="g327"/><button id="g328"/><button id="g329"/><button id="g330"/>
+							<button id="g331"/><button id="g332"/><button id="g333"/><button id="g334"/><button id="g335"/>
+							<button id="g336"/><button id="g337"/><button id="g338"/><button id="g339"/><button id="g340"/>
+							<button id="g341"/><button id="g342"/><button id="g343"/><button id="g344"/><button id="g345"/>
+							<button id="g346"/><button id="g347"/><button id="g348"/><button id="g349"/><button id="g350"/>
+							<button id="g351"/><button id="g352"/><button id="g353"/><button id="g354"/><button id="g355"/>
+							<button id="g356"/><button id="g357"/><button id="g358"/><button id="g359"/><button id="g360"/>
+							<button id="g361"/><button id="g362"/><button id="g363"/><button id="g364"/><button id="g365"/>
+							<button id="g366"/><button id="g367"/><button id="g368"/><button id="g369"/><button id="g370"/>
+							<button id="g371"/><button id="g372"/><button id="g373"/><button id="g374"/><button id="g375"/>
+							<button id="g376"/><button id="g377"/><button id="g378"/><button id="g379"/><button id="g380"/>
+							<button id="g381"/><button id="g382"/><button id="g383"/><button id="g384"/><button id="g385"/>
+							<button id="g386"/><button id="g387"/><button id="g388"/><button id="g389"/><button id="g390"/>
+							<button id="g391"/><button id="g392"/><button id="g393"/><button id="g394"/><button id="g395"/>
+							<button id="g396"/><button id="g397"/><button id="g398"/><button id="g399"/><button id="g400"/>
+							<button id="g401"/><button id="g402"/><button id="g403"/><button id="g404"/><button id="g405"/>
+							<button id="g406"/><button id="g407"/><button id="g408"/><button id="g409"/><button id="g410"/>
+							<button id="g411"/><button id="g412"/><button id="g413"/><button id="g414"/><button id="g415"/>
+							<button id="g416"/><button id="g417"/><button id="g418"/><button id="g419"/><button id="g420"/>
+							<button id="g421"/><button id="g422"/><button id="g423"/><button id="g424"/><button id="g425"/>
+							<button id="g426"/><button id="g427"/><button id="g428"/><button id="g429"/><button id="g430"/>
+							<button id="g431"/><button id="g432"/><button id="g433"/><button id="g434"/><button id="g435"/>
+							<button id="g436"/><button id="g437"/><button id="g438"/><button id="g439"/><button id="g440"/>
+						</div>
+						<div id="gameMsg" class="gameMsgArea" style="display:none;">
+							<label id="msgLabel"/>
+						</div>
+					</div>
+				</td>
+			</table>
+		</div>
+	</body>
+</html>
